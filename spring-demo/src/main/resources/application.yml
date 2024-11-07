@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: spring-demo
+  profiles:
+    active: prod
+
+  cloud:
+    vault:
+      host: localhost
+      port: 8200
+      token: root
+      scheme: http
+      kv:
+        enabled: true
+  config:
+    import: vault://
