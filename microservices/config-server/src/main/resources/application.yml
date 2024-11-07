@@ -6,3 +6,14 @@ server:
 spring:
   application:
     name: config-server
+  profiles:
+    active: vault
+
+  cloud:
+    config:
+      server:
+        vault:
+          host: localhost
+          port: 8200
+          kvVersion: 2
+          backend: spring-microservices
