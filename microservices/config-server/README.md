@@ -1,5 +1,7 @@
 # Spring Cloud Config Server
 
+- [spring-microservices-in-action-2021](https://github.com/magadiflo/spring-microservices-in-action-2021/blob/main/05.configuration-with-spring-cloud-config-server.md)
+
 ---
 
 ## Dependencias
@@ -24,4 +26,32 @@
         <scope>test</scope>
     </dependency>
 </dependencies>
+````
+
+## Configuraciones iniciales
+
+````yml
+server:
+  port: 8888
+  error:
+    include-message: always
+
+spring:
+  application:
+    name: config-server
+````
+
+## Configura aplicación como servidor de configuraciones
+
+````java
+
+@EnableConfigServer
+@SpringBootApplication
+public class ConfigServerApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(ConfigServerApplication.class, args);
+    }
+
+}
 ````
