@@ -1,4 +1,4 @@
-# Spring Boot y Vault
+# Spring Boot + Spring Cloud Config Server + Vault
 
 ---
 
@@ -18,3 +18,9 @@
    `interfaz gráfica` de `Vault`. En este proyecto se crea el `Secrets Engines` llamado `spring-microservices`. Se crean
    los distintos perfiles para nuestra aplicación de Spring Boot. Al finalizar este proyecto se hace uso de la línea de
    comando de `Vault` para crear un nuevo perfil apuntando, obviamente al `spring-microservices` como `secrets engines`.
+
+
+3. El el directorio `/microservices` tenemos un proyecto que incluye `spring boot app` + `spring cloud config server` +
+   `vault`. Se crean perfiles en `Vault` que es totalmente distinto a como hemos creado en los proyectos
+   `spring-demo` y `spring-boot-vault`. Es decir, trabajar con `Spring Boot App + Vault` es distinto a trabajar con
+   `Spring Boot App + Spring Cloud Config Server + Vault`.
