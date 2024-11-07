@@ -367,3 +367,182 @@ $ curl -v -H "X-Config-Token: root" http://localhost:8888/demo-service/prod | jq
 
 ---
 
+## Dependencias
+
+````xml
+<!--Spring Boot 3.3.5-->
+<!--Java 21-->
+<!--Spring Cloud Version 2023.0.3-->
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-config</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+````
+
+## Configuraciones
+
+Las siguientes configuraciones muestran la comunicación con el servidor de configuraciones. Es importante, además,
+definir la propiedad `spring.application.name` con el valor `demo-service`, ya que es el nombre de este microservicio
+con el que hemos creado las configuraciones y perfiles en `Vault`.
+
+Otro punto importante es que en las configuraciones estamos definiendo el `token` que requiere `Vault` para autenticar
+a quien solicite información sobre las configuraciones.
+
+````yml
+server:
+  port: 8080
+  error:
+    include-message: always
+
+spring:
+  application:
+    name: demo-service
+  profiles:
+    active: dev
+  config:
+    import: optional:configserver:http://localhost:8888
+  # Definimos el token para Vault
+  cloud:
+    config:
+      token: root
+````
+
+## Definiendo clases de configuración
+
+Vamos a crear una clase de configuración con el que mapearemos las configuraciones definidas en `Vault`, incluso
+podríamos agregar configuraciones en el `application.yml` del propio `demo-service` con el prefijo `external-api`
+para mapearlas en esta clase. Este último caso lo veremos más adelante.
+
+````java
+
+@Setter
+@Getter
+@ConfigurationProperties(prefix = "external-api")
+public class ExternalApiConfig {
+    private String apiKey;
+    private String username;
+}
+````
+
+Finalmente, en la clase principal `DemoServiceApplication` implementamos la interfaz `CommandLineRunner` para mostrar
+por consola los valores de las configuraciones según el perfil seleccionado.
+
+````java
+
+@Slf4j
+@RequiredArgsConstructor
+@EnableConfigurationProperties(ExternalApiConfig.class)
+@SpringBootApplication
+public class DemoServiceApplication implements CommandLineRunner {
+
+    private final ExternalApiConfig configuration;
+
+    public static void main(String[] args) {
+        SpringApplication.run(DemoServiceApplication.class, args);
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+        log.info("----------------------------------------");
+        log.info("Configuration properties");
+        log.info("   external-api.api-key: {}", configuration.getApiKey());
+        log.info("   external-api.username: {}", configuration.getUsername());
+        log.info("----------------------------------------");
+    }
+}
+````
+
+## Probando Spring Boot App + Spring Cloud Config + Vault
+
+Teniendo levantado nuestro servidor de `Vault` con las configuraciones iniciales, levantamos nuestro servidor de
+configuraciones y de la misma manera levantamos nuestro microservicio `demo-service` con un perfil específico. A
+continuación se muestra el resultado de los perfiles seleccionados para el `demo-service`.
+
+- Perfil `default`
+
+````bash
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : Starting DemoServiceApplication using Java 21.0.1 with PID 3164 (M:\PERSONAL\PROGRAMACION\DESARROLLO_JAVA_SPRING\15.martin_diaz\spring-boot-vault-projects\microservices\demo-service\target\classes started by USUARIO in M:\PERSONAL\PROGRAMACION\DESARROLLO_JAVA_SPRING\15.martin_diaz\spring-boot-vault-projects)
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : The following 1 profile is active: "default"
+[demo-service] [           main] o.s.c.c.c.ConfigServerConfigDataLoader   : Fetching config from server at : http://localhost:8888
+[demo-service] [           main] o.s.c.c.c.ConfigServerConfigDataLoader   : Located environment: name=demo-service, profiles=[default], label=null, version=null, state=null
+[demo-service] [           main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=c3da43c7-4c8e-386c-b2fe-6df9545deac5
+[demo-service] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+[demo-service] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+[demo-service] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.31]
+[demo-service] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+[demo-service] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2353 ms
+[demo-service] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : Started DemoServiceApplication in 6.358 seconds (process running for 7.37)
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : ----------------------------------------
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : Configuration properties
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   :    external-api.api-key: abc-123-default
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   :    external-api.username: username-default
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : ----------------------------------------
+````
+
+- Perfil `dev`
+
+````bash
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : Starting DemoServiceApplication using Java 21.0.1 with PID 16156 (M:\PERSONAL\PROGRAMACION\DESARROLLO_JAVA_SPRING\15.martin_diaz\spring-boot-vault-projects\microservices\demo-service\target\classes started by USUARIO in M:\PERSONAL\PROGRAMACION\DESARROLLO_JAVA_SPRING\15.martin_diaz\spring-boot-vault-projects)
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : The following 1 profile is active: "dev"
+[demo-service] [           main] o.s.c.c.c.ConfigServerConfigDataLoader   : Fetching config from server at : http://localhost:8888
+[demo-service] [           main] o.s.c.c.c.ConfigServerConfigDataLoader   : Located environment: name=demo-service, profiles=[default], label=null, version=null, state=null
+[demo-service] [           main] o.s.c.c.c.ConfigServerConfigDataLoader   : Fetching config from server at : http://localhost:8888
+[demo-service] [           main] o.s.c.c.c.ConfigServerConfigDataLoader   : Located environment: name=demo-service, profiles=[dev], label=null, version=null, state=null
+[demo-service] [           main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=c3da43c7-4c8e-386c-b2fe-6df9545deac5
+[demo-service] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+[demo-service] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+[demo-service] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.31]
+[demo-service] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+[demo-service] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2325 ms
+[demo-service] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : Started DemoServiceApplication in 5.751 seconds (process running for 6.661)
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : ----------------------------------------
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : Configuration properties
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   :    external-api.api-key: abc-123-dev
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   :    external-api.username: username-dev
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : ----------------------------------------
+````
+
+- Perfil `prod`
+
+````bash
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : Starting DemoServiceApplication using Java 21.0.1 with PID 14320 (M:\PERSONAL\PROGRAMACION\DESARROLLO_JAVA_SPRING\15.martin_diaz\spring-boot-vault-projects\microservices\demo-service\target\classes started by USUARIO in M:\PERSONAL\PROGRAMACION\DESARROLLO_JAVA_SPRING\15.martin_diaz\spring-boot-vault-projects)
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : The following 1 profile is active: "prod"
+[demo-service] [           main] o.s.c.c.c.ConfigServerConfigDataLoader   : Fetching config from server at : http://localhost:8888
+[demo-service] [           main] o.s.c.c.c.ConfigServerConfigDataLoader   : Located environment: name=demo-service, profiles=[default], label=null, version=null, state=null
+[demo-service] [           main] o.s.c.c.c.ConfigServerConfigDataLoader   : Fetching config from server at : http://localhost:8888
+[demo-service] [           main] o.s.c.c.c.ConfigServerConfigDataLoader   : Located environment: name=demo-service, profiles=[prod], label=null, version=null, state=null
+[demo-service] [           main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=c3da43c7-4c8e-386c-b2fe-6df9545deac5
+[demo-service] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+[demo-service] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+[demo-service] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.31]
+[demo-service] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+[demo-service] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2492 ms
+[demo-service] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : Started DemoServiceApplication in 6.009 seconds (process running for 6.937)
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : ----------------------------------------
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : Configuration properties
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   :    external-api.api-key: abc-123-prod
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   :    external-api.username: username-prod
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : ----------------------------------------
+````
+
+

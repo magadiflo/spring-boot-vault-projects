@@ -1,3 +1,16 @@
+server:
+  port: 8080
+  error:
+    include-message: always
+
 spring:
   application:
     name: demo-service
+  profiles:
+    active: dev
+  config:
+    import: optional:configserver:http://localhost:8888
+  # Definimos el token para Vault
+  cloud:
+    config:
+      token: root
