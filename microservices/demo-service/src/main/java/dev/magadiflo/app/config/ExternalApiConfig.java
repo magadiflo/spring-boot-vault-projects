@@ -10,4 +10,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class ExternalApiConfig {
     private String apiKey;
     private String username;
+    private String dbPassword; //Nueva configuración en Vault (default)
+    private String url; //Nueva configuración en el application.yml de demo-service
 }

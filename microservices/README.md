@@ -545,4 +545,93 @@ continuación se muestra el resultado de los perfiles seleccionados para el `dem
 [demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : ----------------------------------------
 ````
 
+## Agregando más configuraciones
 
+Solo en el perfil por `default` agregaremos la siguiente configuración `external-api.db-password`.
+
+![11.png](assets/11.png)
+
+Ahora, en el `application.yml` del `demo-service` vamos a agregar la configuración `external-api.url`, dado que
+hipotéticamente estoy considerando de que esa configuración no es confidencial.
+
+````yml
+external-api:
+  url: http://localhost:3020/api/services
+````
+
+Ahora, como hemos agregado dos configuraciones más, uno en `Vault` y otro en el propio microservicio `demo-service`,
+necesitamos actualizar las propiedades de nuestra clase de configuración.
+
+````java
+
+@Setter
+@Getter
+@ConfigurationProperties(prefix = "external-api")
+public class ExternalApiConfig {
+    private String apiKey;
+    private String username;
+    private String dbPassword; //Nueva configuración en Vault (default)
+    private String url; //Nueva configuración en el application.yml de demo-service
+}
+````
+
+Finalmente, necesitamos modificar la clase principal para imprimir los nuevos valores.
+
+````java
+
+@Slf4j
+@RequiredArgsConstructor
+@EnableConfigurationProperties(ExternalApiConfig.class)
+@SpringBootApplication
+public class DemoServiceApplication implements CommandLineRunner {
+
+    private final ExternalApiConfig configuration;
+
+    public static void main(String[] args) {
+        SpringApplication.run(DemoServiceApplication.class, args);
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+        log.info("----------------------------------------");
+        log.info("Configuration properties");
+        log.info("   external-api.api-key: {}", configuration.getApiKey());
+        log.info("   external-api.username: {}", configuration.getUsername());
+
+        log.info("   external-api.db-password: {}", configuration.getDbPassword());
+        log.info("   external-api.url: {}", configuration.getUrl());
+        log.info("----------------------------------------");
+    }
+}
+````
+
+Ejecutamos `demo-service` con el perfil `spring.profiles.active=dev` y vemos el resultado obtenido.
+
+````bash
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : Starting DemoServiceApplication using Java 21.0.1 with PID 16288 (M:\PERSONAL\PROGRAMACION\DESARROLLO_JAVA_SPRING\15.martin_diaz\spring-boot-vault-projects\microservices\demo-service\target\classes started by USUARIO in M:\PERSONAL\PROGRAMACION\DESARROLLO_JAVA_SPRING\15.martin_diaz\spring-boot-vault-projects)
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : The following 1 profile is active: "dev"
+[demo-service] [           main] o.s.c.c.c.ConfigServerConfigDataLoader   : Fetching config from server at : http://localhost:8888
+[demo-service] [           main] o.s.c.c.c.ConfigServerConfigDataLoader   : Located environment: name=demo-service, profiles=[default], label=null, version=null, state=null
+[demo-service] [           main] o.s.c.c.c.ConfigServerConfigDataLoader   : Fetching config from server at : http://localhost:8888
+[demo-service] [           main] o.s.c.c.c.ConfigServerConfigDataLoader   : Located environment: name=demo-service, profiles=[dev], label=null, version=null, state=null
+[demo-service] [           main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=c3da43c7-4c8e-386c-b2fe-6df9545deac5
+[demo-service] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+[demo-service] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+[demo-service] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.31]
+[demo-service] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+[demo-service] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2359 ms
+[demo-service] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : Started DemoServiceApplication in 6.086 seconds (process running for 7.01)
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : ----------------------------------------
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : Configuration properties
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   :    external-api.api-key: abc-123-dev
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   :    external-api.username: username-dev
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   :    external-api.db-password: db-password-default
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   :    external-api.url: http://localhost:3020/api/services
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : ----------------------------------------
+````
+
+Como observamos, el resultado anterior trae los valores del perfil `dev`, pero como en `Vault` no tenemos la
+configuración `db-password` (perfil `dev`), traerá el valor definido en el perfil `default`. Con respecto a la
+`url`, como esta configuración no lo tenemos en ningún perfil de `Vault`, pues lo tomará del `application.yml` del
+propio microservicio `demo-service`.

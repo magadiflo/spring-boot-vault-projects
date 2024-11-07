@@ -26,6 +26,9 @@ public class DemoServiceApplication implements CommandLineRunner {
         log.info("Configuration properties");
         log.info("   external-api.api-key: {}", configuration.getApiKey());
         log.info("   external-api.username: {}", configuration.getUsername());
+
+        log.info("   external-api.db-password: {}", configuration.getDbPassword());
+        log.info("   external-api.url: {}", configuration.getUrl());
         log.info("----------------------------------------");
     }
 }

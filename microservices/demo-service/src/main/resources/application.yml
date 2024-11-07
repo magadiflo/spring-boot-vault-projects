@@ -14,3 +14,7 @@ spring:
   cloud:
     config:
       token: root
+
+# Configuración personalizada
+external-api:
+  url: http://localhost:3020/api/services
