@@ -148,10 +148,6 @@ creados para el microservicio `demo-service`: `default`, `dev`, `prod`.
 <!--Spring Cloud Version 2023.0.3-->
 <dependencies>
     <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-actuator</artifactId>
-    </dependency>
-    <dependency>
         <groupId>org.springframework.cloud</groupId>
         <artifactId>spring-cloud-config-server</artifactId>
     </dependency>
@@ -221,5 +217,146 @@ public class ConfigServerApplication {
         SpringApplication.run(ConfigServerApplication.class, args);
     }
 
+}
+````
+
+## Probando perfiles para el microservicio demo-service
+
+Antes de empezar con la creación del microservicio `demo-service` podemos probar los perfiles que le creamos en `Vault`
+a través del servidor de configuraciones. Entonces, podemos probar nuestro servidor de configuración mediante una
+solicitud HTTP. Aquí puedes usar un comando `cURL` o algún cliente REST como `Postman`.
+
+Empecemos enviando la siguiente petición.
+
+````bash
+$ curl -v  http://localhost:8888/demo-service/default | jq
+>
+* Request completely sent off
+< HTTP/1.1 400
+< Content-Type: application/json
+< Transfer-Encoding: chunked
+< Date: Thu, 07 Nov 2024 19:39:27 GMT
+< Connection: close
+<
+{
+  "timestamp": "2024-11-07T19:39:27.536+00:00",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Missing required header in HttpServletRequest: X-Config-Token",
+  "path": "/demo-service/default"
+}
+````
+
+Este error indica que el servidor de configuración de `Spring Cloud Config` está esperando el encabezado
+`X-Config-Token` en la solicitud HTTP para autenticar el acceso a `Vault`, pero la solicitud curl que realizamos no lo
+incluyó.
+
+Entonces, es importante enviar la cabecera `X-Config-Token` con el valor `root` en la petición para que nuestro
+servidor de configuraciones autentique correctamente el acceso a `Vault`.
+
+En la siguiente petición vemos los valores obtenidos para el perfil por defecto de nuestro microservicio `demo-service`.
+
+````bash
+$ curl -v -H "X-Config-Token: root" http://localhost:8888/demo-service/default | jq
+>
+< HTTP/1.1 200
+< Content-Type: application/json
+< Transfer-Encoding: chunked
+< Date: Thu, 07 Nov 2024 18:03:48 GMT
+<
+{
+  "name": "demo-service",
+  "profiles": [
+    "default"
+  ],
+  "label": null,
+  "version": null,
+  "state": null,
+  "propertySources": [
+    {
+      "name": "vault:demo-service",
+      "source": {
+        "external-api.api-key": "abc-123-default",
+        "external-api.username": "username-default"
+      }
+    }
+  ]
+}
+````
+
+En la siguiente petición vemos los valores obtenidos para el perfil `dev` del microservicio `demo-service`. Es
+importante observar que a pesar de que solicitamos el perfil `dev`, el perfil por `default` también se está cargando y
+si alguna propiedad no está definida en el perfil `dev`, se tomará el del perfil por `default` si es que allí se
+encuentra definido.
+
+````bash
+$ curl -v -H "X-Config-Token: root" http://localhost:8888/demo-service/dev | jq
+>
+< HTTP/1.1 200
+< Content-Type: application/json
+< Transfer-Encoding: chunked
+< Date: Thu, 07 Nov 2024 18:04:35 GMT
+<
+{
+  "name": "demo-service",
+  "profiles": [
+    "dev"
+  ],
+  "label": null,
+  "version": null,
+  "state": null,
+  "propertySources": [
+    {
+      "name": "vault:demo-service,dev",
+      "source": {
+        "external-api.api-key": "abc-123-dev",
+        "external-api.username": "username-dev"
+      }
+    },
+    {
+      "name": "vault:demo-service",
+      "source": {
+        "external-api.api-key": "abc-123-default",
+        "external-api.username": "username-default"
+      }
+    }
+  ]
+}
+````
+
+En la siguiente petición solicitamos las configuraciones para el perfil `prod` del microservicio `demo-service`.
+
+````bash
+$ curl -v -H "X-Config-Token: root" http://localhost:8888/demo-service/prod | jq
+>
+< HTTP/1.1 200
+< Content-Type: application/json
+< Transfer-Encoding: chunked
+< Date: Thu, 07 Nov 2024 18:04:53 GMT
+<
+{
+  "name": "demo-service",
+  "profiles": [
+    "prod"
+  ],
+  "label": null,
+  "version": null,
+  "state": null,
+  "propertySources": [
+    {
+      "name": "vault:demo-service,prod",
+      "source": {
+        "external-api.api-key": "abc-123-prod",
+        "external-api.username": "username-prod"
+      }
+    },
+    {
+      "name": "vault:demo-service",
+      "source": {
+        "external-api.api-key": "abc-123-default",
+        "external-api.username": "username-default"
+      }
+    }
+  ]
 }
 ````
