@@ -9,5 +9,12 @@
 
 ## Proyectos
 
-- En el proyecto `spring-demo` se realiza la integración de `Spring Boot` con `Vault` y se agregan las configuraciones
-  a `Vault` a través de la línea de comandos. Se usa por defecto el `Secrets Engine` llamado `secret`.
+1. En el proyecto `spring-demo` se realiza la integración de `Spring Boot` con `Vault` y se agregan las configuraciones
+   a `Vault` a través de la línea de comandos. Se usa por defecto el `Secrets Engines` llamado `secret`. Se crean
+   los distintos perfiles para nuestra aplicación de Spring Boot.
+
+
+2. En el proyecto `spring-boot-vault` se hace la integración de `Spring Boot` con `Vault` a través de la
+   `interfaz gráfica` de `Vault`. En este proyecto se crea el `Secrets Engines` llamado `spring-microservices`. Se crean
+   los distintos perfiles para nuestra aplicación de Spring Boot. Al finalizar este proyecto se hace uso de la línea de
+   comando de `Vault` para crear un nuevo perfil apuntando, obviamente al `spring-microservices` como `secrets engines`.
