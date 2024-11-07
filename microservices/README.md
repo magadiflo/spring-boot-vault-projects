@@ -360,3 +360,10 @@ $ curl -v -H "X-Config-Token: root" http://localhost:8888/demo-service/prod | jq
   ]
 }
 ````
+
+---
+
+# Spring Boot App: demo-service
+
+---
+
