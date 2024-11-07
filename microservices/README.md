@@ -5,7 +5,9 @@ Se tomó como referencia el tutorial desarrollado en este repositorio
 
 ---
 
-## Configurando servidor Vault
+# Vault Server
+
+---
 
 Iniciamos el servidor de `Vault` asignándole `root` como su token id.
 
