@@ -134,6 +134,12 @@ creados para el microservicio `demo-service`: `default`, `dev`, `prod`.
 
 ![10.png](assets/10.png)
 
+---
+
+# Spring Cloud Config Server
+
+---
+
 ## Dependencias
 
 ````xml
@@ -160,6 +166,9 @@ creados para el microservicio `demo-service`: `default`, `dev`, `prod`.
 
 ## Configuraciones iniciales
 
+A continuación se muestran las configuraciones de nuestro `config-server`, estas incluyen configuraciones para poder
+comunicarnos con `Vault`.
+
 ````yml
 server:
   port: 8888
@@ -169,9 +178,38 @@ server:
 spring:
   application:
     name: config-server
+  profiles:
+    active: vault
+
+  cloud:
+    config:
+      server:
+        vault:
+          host: localhost
+          port: 8200
+          kvVersion: 2
+          backend: spring-microservices
 ````
 
+- Observemos que estamos activando el perfil `vault` en nuestro `config-server` y a continuación definiendo las
+  configuraciones para conectanos a `Vault`.
+
+- La configuración `kvVersion`, establece la versión del motor de secretos `kv`. Se recomienda utilizar
+  `kvVersion de 2`.
+
+- Con respecto al `backend: spring-microservices`, se refiere al camino o `mount path` del motor de secretos dentro de
+  `HashiCorp Vault` desde donde `Spring Cloud Config Server` obtendrá la configuración. Es decir, este es el nombre que
+  le dimos al motor de secretos `KV (Secrets Engine)` cuando lo montamos en `Vault`.
+
+**NOTA**
+> Un punto importante aquí es la versión del motor kv secrets. El valor predeterminado para
+> `spring.cloud.config.server.kv-version` es `1`. Pero se recomienda usar la `versión 2` cuando usamos `Vault 0.10.0` o
+> posterior.
+
 ## Configura aplicación como servidor de configuraciones
+
+Para habilitar nuestro `config-server` como un servidor de configuraciones debemos agregar la anotación
+`@EnableConfigServer` en la clase principal de la aplicación.
 
 ````java
 
