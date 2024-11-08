@@ -3,9 +3,11 @@ package dev.magadiflo.app.config;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 
 @Setter
 @Getter
+@RefreshScope // Indica que esta clase debe ser recargada cuando se refresque la configuración
 @ConfigurationProperties(prefix = "external-api")
 public class ExternalApiConfig {
     private String apiKey;

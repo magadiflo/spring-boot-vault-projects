@@ -635,3 +635,155 @@ Como observamos, el resultado anterior trae los valores del perfil `dev`, pero c
 configuración `db-password` (perfil `dev`), traerá el valor definido en el perfil `default`. Con respecto a la
 `url`, como esta configuración no lo tenemos en ningún perfil de `Vault`, pues lo tomará del `application.yml` del
 propio microservicio `demo-service`.
+
+## Actualiza propiedades del demo-service usando Spring Boot Actuator + Spring Cloud Config Server
+
+Nuestro microservicio `demo-service` se comunica con `Spring Cloud Config Server` para obtener sus propiedades de
+configuración dependiendo del perfil que se haya seleccionado. Además, el `Spring Cloud Config Server` se comunica con
+`Vault` para obtener dichas propiedades.
+
+Pero podría darse el caso en el que el microservicio `demo-service` ya se encuentra en ejecución con los valores de las
+propiedades tomadas de `Vault`. Pero luego las propiedades definidas en `Vault` son cambiados. **¿Cómo el microservicio
+demo-service puede obtener los nuevos valores de las propiedades actualizadas en Vault sin necesidad de reiniciar el
+microservicio?**, para eso nos apoyamos de `Spring Actuator` y la anotación `@RefreshScope`.
+
+En el microservicio `demo-service` agregamos la siguiente dependencia en su `pom.xml`, dado que es el microservicio que
+está obteniendo las propiedades que necesitamos actualizar y esta dependencia nos ayudará a hacerlo.
+
+````xml
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+````
+
+En el `application.yml` del microservicio `demo-service` habilitamos los endpoints de `Spring Actuator`. Podemos indicar
+separados por coma las url de los endpoints, pero mejor usamos el `*` para indicar que habilite todos los endpoints de
+`Spring Actuator`, eso incluye el `/refresh` quien precisamente es el que nos permitirá actualizar todos los componentes
+anotados con `@RefreshScope`.
+
+````yml
+# Habilita endpoints de Spring Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+````
+
+Para usar la anotación `@RefreshScope` en Spring Boot para permitir la recarga dinámica de las propiedades de
+configuración obtenidas de un servidor de configuración, debes aplicar la anotación a los beans que quieres recargar
+cuando haya una actualización.
+
+````java
+
+@Setter
+@Getter
+@RefreshScope // Indica que esta clase debe ser recargada cuando se refresque la configuración
+@ConfigurationProperties(prefix = "external-api")
+public class ExternalApiConfig {
+    private String apiKey;
+    private String username;
+    private String dbPassword; //Nueva configuración en Vault (default)
+    private String url; //Nueva configuración en el application.yml de demo-service
+}
+````
+
+Finalmente, vamos a crear un endpoint a quien realizaremos la llamada para poder verificar que los cambios se han
+aplicado correctamente.
+
+````java
+
+@Slf4j
+@RequiredArgsConstructor
+@RestController
+@RequestMapping(path = "/api/v1/externals")
+public class ExternalController {
+
+    private final ExternalApiConfig configuration;
+
+    @GetMapping
+    public void getProperties() {
+        log.info("----------------------------------------");
+        log.info("Configuration properties");
+        log.info("   external-api.api-key: {}", configuration.getApiKey());
+        log.info("   external-api.username: {}", configuration.getUsername());
+
+        log.info("   external-api.db-password: {}", configuration.getDbPassword());
+        log.info("   external-api.url: {}", configuration.getUrl());
+        log.info("----------------------------------------");
+    }
+
+}
+````
+
+## Prueba actualización de propiedades de manera dinámica
+
+Teniendo levantado nuestro servidor `Vault` con las configuraciones y valores ya almacenados, vamos a levantar a
+continuación el `config-server` y finalmente nuestro microservicio `demo-service`.
+
+Al levantar el `demo-service` obtenemos los siguientes valores iniciales de las propiedades. Notar que la propiedad
+`external-api.db-password` nos retorna `null`, es porque esta propiedad no lo tenemos definida en `Vault` ni en ningún
+otro lado. Bueno, en apartados iniciales sí lo teníamos configurado en `Vault` pero como bajamos y volvimos a levantar
+`Vault` en desarrollo se perdieron todas las propiedades configuradas, así que se tuvo que volver a agregar las
+configuraciones omitiendo el del `db-password`.
+
+````bash
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : The following 1 profile is active: "dev"
+...
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : ----------------------------------------
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : Configuration properties
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   :    external-api.api-key: abc-123-dev-v3
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   :    external-api.username: username-dev-v3
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   :    external-api.db-password: null
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   :    external-api.url: http://localhost:3020/api/services
+[demo-service] [           main] d.magadiflo.app.DemoServiceApplication   : ----------------------------------------
+````
+
+Luego nos vamos a `Vault` y creamos una nueva versión de las propiedades definidas en el perfil `dev`, donde le vamos
+a cambiar el valor de las propiedades. Ahora, para hacer visible esos cambios, debemos ejecutar el endpoint de
+`Spring Actuator` que habilitamos en el `application.yml` de nuestro `demo-service`. Esta petición nos permitirá
+actualizar las propiedades en nuestro `demo-service`.
+
+````bash
+$ curl -v -X POST http://localhost:8080/actuator/refresh | jq
+>
+< HTTP/1.1 200
+< Content-Type: application/vnd.spring-boot.actuator.v3+json
+< Transfer-Encoding: chunked
+< Date: Fri, 08 Nov 2024 16:13:24 GMT
+<
+[
+  "external-api.api-key",
+  "external-api.username"
+]
+````
+
+Como observamos, luego de ejecutar el endpoint anterior, vemos las configuraciones que han sufrido cambios.
+
+Ahora, para comprobar que nuestro `demo-service` contiene los nuevos valores de las propiedades, vamos a realizar una
+petición al endpoint creado en el `demo-service`.
+
+````bash
+$ curl -v http://localhost:8080/api/v1/externals | jq
+>
+< HTTP/1.1 200
+< Content-Length: 0
+< Date: Fri, 08 Nov 2024 16:14:18 GMT
+<
+````
+
+Ahora, si nos vamos al log de nuestro IDE veremos que se muestran los nuevos valores que le definimos a las propiedades
+del perfil `dev` en `Vault`.
+
+````bash
+[demo-service] [nio-8080-exec-3] d.m.app.controller.ExternalController    : ----------------------------------------
+[demo-service] [nio-8080-exec-3] d.m.app.controller.ExternalController    : Configuration properties
+[demo-service] [nio-8080-exec-3] d.m.app.controller.ExternalController    :    external-api.api-key: abc-123-dev-v4
+[demo-service] [nio-8080-exec-3] d.m.app.controller.ExternalController    :    external-api.username: username-dev-v4
+[demo-service] [nio-8080-exec-3] d.m.app.controller.ExternalController    :    external-api.db-password: null
+[demo-service] [nio-8080-exec-3] d.m.app.controller.ExternalController    :    external-api.url: http://localhost:3020/api/services
+[demo-service] [nio-8080-exec-3] d.m.app.controller.ExternalController    : ----------------------------------------
+````
+

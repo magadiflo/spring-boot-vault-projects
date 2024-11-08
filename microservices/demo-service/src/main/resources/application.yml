@@ -15,6 +15,13 @@ spring:
     config:
       token: root
 
-# Configuración personalizada
+# ConfiguraciÃ³n personalizada
 external-api:
   url: http://localhost:3020/api/services
+
+# Habilita endpoints de Spring Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
