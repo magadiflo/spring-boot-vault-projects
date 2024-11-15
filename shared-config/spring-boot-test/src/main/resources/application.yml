@@ -1,0 +1,22 @@
+server:
+  port: 8081
+  error:
+    include-message: always
+
+spring:
+  application:
+    name: spring-boot-test
+
+  cloud:
+    vault:
+      host: localhost
+      port: 8200
+      token: root
+      scheme: http
+      kv:
+        backend: spring-microservices
+        default-context: shared-config
+        application-name: ${spring.application.name}
+
+  config:
+    import: optional:vault://
