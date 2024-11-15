@@ -24,3 +24,11 @@
    `vault`. Se crean perfiles en `Vault` que es totalmente distinto a como hemos creado en los proyectos
    `spring-demo` y `spring-boot-vault`. Es decir, trabajar con `Spring Boot App + Vault` es distinto a trabajar con
    `Spring Boot App + Spring Cloud Config Server + Vault`.
+
+
+4. En el directorio `/shared-config` hemos creado dos aplicaciones `spring-boot-test-vault` y `spring-boot-test`. Ambas
+   aplicaciones tienen dos configuraciones en común, o en otras palabras utilizan los mismos valores para esas
+   configuraciones y además cada aplicación tiene configuraciones que son propias de él. Entonces, lo que se hizo fue
+   crear en `Vault` un `default-context` llamado `shared-config` para alojar las configuraciones compartidas y además se
+   uso la configuración `application-name` para especificar el nombre de la aplicación donde se alojará las
+   configuraciones propias de la aplicación. 
