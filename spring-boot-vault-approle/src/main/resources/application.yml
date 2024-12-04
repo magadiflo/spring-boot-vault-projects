@@ -8,8 +8,15 @@ spring:
     vault:
       host: localhost
       port: 8200
-      token: root
       scheme: http
+      authentication: APPROLE
+      app-role:
+        #dev
+        role-id: 8896c215-9501-e217-28e7-0801d164e95b
+        secret-id: 967655ad-602f-d698-861c-f5615f2aeb9d
+        #qa
+        #role-id: 6be7190b-b850-3e2a-be35-e69cc1cbf9d4
+        #secret-id: fef9a42b-2bce-d86b-c9d2-f75aa81033cf
       kv:
         backend: spring-microservices
         default-context: spring-boot-vault-approle
