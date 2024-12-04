@@ -1,4 +1,4 @@
-package dev.magadiflo.spring_boot_vault_approle;
+package dev.magadiflo.app;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
