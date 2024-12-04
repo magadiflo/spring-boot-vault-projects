@@ -1,3 +1,21 @@
 spring:
   application:
     name: spring-boot-vault-approle
+  profiles:
+    active: dev
+
+  cloud:
+    vault:
+      host: localhost
+      port: 8200
+      token: root
+      scheme: http
+      kv:
+        backend: spring-microservices
+        default-context: spring-boot-vault-approle
+
+  config:
+    import: optional:vault://
+
+external-api:
+  uri: https://external-api-for-spring-boot-vault-approle.com/v1/

@@ -17,5 +17,8 @@ restricciones establecidas en el `AppRole` asociado con las credenciales.
 El `authentication: TOKEN` es el método de autenticación predeterminado. Si se divulga un token, una parte no deseada
 obtiene acceso a Vault y puede acceder a los secretos del cliente previsto.
 
-La autenticación `AppRole` consta de dos tokens (secretos) difíciles de adivinar: `RoleId` y `SecretId`.
+> Usar el método de autenticación por `token` en la configuración es algo que deberíamos evitar en un entorno de
+> producción, ya que tiene permisos de administrador sobre todo `Vault`. En su lugar, podemos usar el `AppRole` con
+> `políticas` específicas para limitar el acceso y mantener la seguridad.
 
+La autenticación `AppRole` consta de dos tokens (secretos) difíciles de adivinar: `RoleId` y `SecretId`.
