@@ -31,6 +31,32 @@ obtiene acceso a Vault y puede acceder a los secretos del cliente previsto.
 
 La autenticación `AppRole` consta de dos tokens (secretos) difíciles de adivinar: `RoleId` y `SecretId`.
 
+## Relación entre [secret_id_ttl, token_ttl, token_max_ttl] y [role-id y secret-id]
+
+Los valores de `secret_id_ttl`, `token_ttl` y `token_max_ttl` tienen relación con la forma en que se gestionan las
+credenciales generadas para tu aplicación al autenticarse mediante `AppRole`. Aquí explicamos detalladamente qué son y
+cómo interactúan con el `role_id` y el `secret_id`.
+
+### Conceptos básicos en AppRole
+
+1. `role_id`:
+
+    - Es un identificador estático asociado a un `AppRole`.
+    - Es similar a un "nombre de usuario" que tu aplicación usa para autenticarse.
+    - Es público, por lo que no requiere tanto cuidado como el secret_id.
+
+2. `secret_id`:
+
+    - Es un valor sensible asociado al AppRole, similar a una "contraseña".
+    - Es usado junto con el `role_id` para generar un `token de autenticación`.
+    - El tiempo de vida del secret_id está controlado por `secret_id_ttl`.
+
+3. `token`:
+
+    - Es el resultado de la autenticación exitosa usando `role_id + secret_id`.
+    - Permite a la aplicación acceder a los secretos y configuraciones en Vault según las políticas asignadas.
+    - Su tiempo de vida está controlado por `token_ttl` y `token_max_ttl`.
+
 ## Configurar AppRole en Vault
 
 1. Habilita el Auth Backend de AppRole (si no lo está). `AppRole` permite autenticar aplicaciones mediante una
@@ -116,51 +142,5 @@ La autenticación `AppRole` consta de dos tokens (secretos) difíciles de adivin
 > Si queremos tener roles y políticas para otros perfiles simplemente debemos repetir los pasos anteriores teniendo en
 > cuenta el perfil.
 
-## ¿Qué sucede exactamente si omites los valores en el siguiente comando?
 
-El comando original sería:
-
-````bash
-$ vault write auth/approle/role/spring-boot-vault-approle-dev-role policies=spring-boot-vault-approle-dev-policy secret_id_ttl=1h token_ttl=1h token_max_ttl=4h
-````
-
-Ahora, qué pasa si usamos el siguiente comando omitiendo `secret_id_ttl=1h token_ttl=1h token_max_ttl=4h`.
-
-````bash
-$ vault write auth/approle/role/spring-boot-vault-approle-dev-role policies=spring-boot-vault-approle-dev-policy
-````
-
-1. El `AppRole` se creará exitosamente.
-2. `Vault` asignará los valores predeterminados globales para:
-    - `secret_id_ttl`, puede ser indefinido o configurado (generalmente no hay límite si no se especifica).
-    - `token_ttl`, normalmente, será 32 días.
-    - `token_max_ttl`, normalmente, será 32 días.
-3. Los tokens generados tendrán una mayor duración, lo cual podría ser un riesgo en entornos de producción, ya que se
-   reduce la frecuencia de rotación de credenciales.
-
-## Relación entre secret_id_ttl, token_ttl, token_max_ttl y role-id y secret-id
-
-Los valores de `secret_id_ttl`, `token_ttl` y `token_max_ttl` tienen relación con la forma en que se gestionan las
-credenciales generadas para tu aplicación al autenticarse mediante `AppRole`. Aquí explicamos detalladamente qué son y
-cómo interactúan con el `role_id` y el `secret_id`.
-
-### Conceptos básicos en AppRole
-
-1. `role_id`:
-
-    - Es un identificador estático asociado a un `AppRole`.
-    - Es similar a un "nombre de usuario" que tu aplicación usa para autenticarse.
-    - Es público, por lo que no requiere tanto cuidado como el secret_id.
-
-2. `secret_id`:
-
-    - Es un valor sensible asociado al AppRole, similar a una "contraseña".
-    - Es usado junto con el `role_id` para generar un `token de autenticación`.
-    - El tiempo de vida del secret_id está controlado por `secret_id_ttl`.
-
-3. `token`:
-
-    - Es el resultado de la autenticación exitosa usando `role_id + secret_id`.
-    - Permite a la aplicación acceder a los secretos y configuraciones en Vault según las políticas asignadas.
-    - Su tiempo de vida está controlado por `token_ttl` y `token_max_ttl`.
 
