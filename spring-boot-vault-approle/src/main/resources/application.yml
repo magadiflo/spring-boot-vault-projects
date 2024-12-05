@@ -11,12 +11,8 @@ spring:
       scheme: http
       authentication: APPROLE
       app-role:
-        #dev
-        role-id: 8896c215-9501-e217-28e7-0801d164e95b
-        secret-id: 967655ad-602f-d698-861c-f5615f2aeb9d
-        #qa
-        #role-id: 6be7190b-b850-3e2a-be35-e69cc1cbf9d4
-        #secret-id: fef9a42b-2bce-d86b-c9d2-f75aa81033cf
+        role-id: cd268cb1-d711-359d-ba9e-76de1d6a507a
+        secret-id: 9e2bf4d8-2654-2f32-a7ed-36b4e8cb938e
       kv:
         backend: spring-microservices
         default-context: spring-boot-vault-approle

@@ -97,7 +97,7 @@ cómo interactúan con el `role_id` y el `secret_id`.
 3. Crea un `AppRole` por perfil. Creamos un `AppRole` asociado a la política `spring-boot-vault-approle-dev-policy`.
 
    ````bash
-   $ vault write auth/approle/role/spring-boot-vault-approle-dev-role policies=spring-boot-vault-approle-dev-policy secret_id_ttl=1h token_ttl=1h token_max_ttl=4h
+   $ vault write auth/approle/role/spring-boot-vault-approle-dev-role policies=spring-boot-vault-approle-dev-policy
    ````
    **Donde**
 
@@ -110,12 +110,12 @@ cómo interactúan con el `role_id` y el `secret_id`.
       espacio de roles en `Vault`.
     - `policies=spring-boot-vault-approle-dev-policy`, es el nombre de la política que define qué operaciones y rutas
       están permitidas para este rol.
-    - `secret_id_ttl=1h`, define el tiempo de vida (Time To Live) de los Secret IDs generados para este AppRole. El
-      valor `1h` significa que cada Secret ID generado será válido por 1 hora desde su creación.
-    - `token_ttl=1h`, establece el tiempo de vida inicial de los tokens generados cuando una aplicación o servicio se
-      autentica con este AppRole.
-    - `token_max_ttl=4h`, establece el tiempo de vida máximo de los tokens generados. El valor `4h` significa que un
-      token puede renovarse hasta un máximo de 4 horas desde su emisión inicial.
+
+   **Nota**
+   > Cuando generemos el `role-id` y `secret-id` a partir del rol anterior, los valores no tendrán una fecha de
+   > caducidad, tendrán un tiempo de vida ilimitado. Si queremos asignarle un tiempo de vida debemos crear el rol con
+   > algunas opciones adicionales. Ver la sección `Configura tiempo de vida de secret-id y tokens en AppRole.`
+
 
 4. Obtenemos las credenciales del `AppRole`.
     - Obtener el Role ID
@@ -123,7 +123,7 @@ cómo interactúan con el `role_id` y el `secret_id`.
    $ vault read auth/approle/role/spring-boot-vault-approle-dev-role/role-id
    Key        Value
    ---        -----
-   role_id    8896c215-9501-e217-28e7-0801d164e95b
+   role_id    cd268cb1-d711-359d-ba9e-76de1d6a507a
    ````
 
     - Generar el Secret ID
@@ -132,15 +132,96 @@ cómo interactúan con el `role_id` y el `secret_id`.
    $ vault write -f auth/approle/role/spring-boot-vault-approle-dev-role/secret-id
    Key                   Value
    ---                   -----
-   secret_id             967655ad-602f-d698-861c-f5615f2aeb9d
-   secret_id_accessor    3f7c0e4b-9a3b-4c1b-36f8-bed55408fc0b
+   secret_id             9e2bf4d8-2654-2f32-a7ed-36b4e8cb938e
+   secret_id_accessor    f4792b09-b6a0-9169-1f8a-60463b958a67
    secret_id_num_uses    0
-   secret_id_ttl         1h
+   secret_id_ttl         0s
    ````
 
 **Nota**
 > Si queremos tener roles y políticas para otros perfiles simplemente debemos repetir los pasos anteriores teniendo en
 > cuenta el perfil.
 
+## Algunos comandos para interactuar con Vault, políticas y roles
+
+- Listar políticas
+
+   ````bash
+   $ vault policy list
+   default
+   spring-boot-vault-approle-dev-policy
+   root
+   ````
+
+- Listar roles
+
+   ````bash
+   $ vault list auth/approle/role
+   Keys
+   ----
+   spring-boot-vault-approle-dev-role
+   ````
+
+- Eliminar una política
+
+  ````bash
+  $ vault policy delete spring-boot-vault-approle-dev-policy
+  Success! Deleted policy: spring-boot-vault-approle-dev-policy
+  ````
+
+- Eliminar un rol
+
+   ````bash
+   $ vault delete auth/approle/role/spring-boot-vault-approle-dev-role
+   Success! Data deleted (if it existed) at: auth/approle/role/spring-boot-vault-approle-dev-role
+   ````
+
+- Detalles del rol
+
+   ````bash
+   $ vault read auth/approle/role/spring-boot-vault-approle-dev-role
+   Key                        Value
+   ---                        -----
+   bind_secret_id             true
+   local_secret_ids           false
+   policies                   [spring-boot-vault-approle-dev-policy]
+   secret_id_bound_cidrs      <nil>
+   secret_id_num_uses         0
+   secret_id_ttl              0s
+   token_bound_cidrs          []
+   token_explicit_max_ttl     0s
+   token_max_ttl              0s
+   token_no_default_policy    false
+   token_num_uses             0
+   token_period               0s
+   token_policies             [spring-boot-vault-approle-dev-policy]
+   token_ttl                  0s
+   token_type                 default
+   ````
+
+## Configura tiempo de vida de secret-id y tokens en AppRole
+
+A continuación se muestra el comando para crear un `AppRole` asociado a la política
+`spring-boot-vault-approle-dev-policy` pero asignándole un tiempo de vida `(TTL)` al `secret-id` y `tokens`. Es
+importante recordar que el `token` en `Vault` se genera utilizando el `secret-id` y el `role-id` de un `AppRole`.
+
+En el siguiente comando el `TTL (Time To Live)` del `token` y del `secret-id` está definido por las opciones que usamos
+en el siguiente comando.
+
+````bash
+$ vault write auth/approle/role/spring-boot-vault-approle-dev-role policies=spring-boot-vault-approle-dev-policy secret_id_ttl=1h token_ttl=1h token_max_ttl=4h
+````
+
+**Donde**
+
+- `secret_id_ttl=1h`: Esto define el tiempo de vida del secret-id. En este caso, el secret-id expirará después de 1
+  hora. Una vez que expire, necesitarás generar un nuevo secret-id para autenticarte nuevamente.
 
 
+- `token_ttl=1h`: Esto define el tiempo de vida del token generado. En este caso, el token expirará después de 1 hora.
+  Una vez que expire, la aplicación necesitará generar un nuevo token utilizando un role-id y un secret-id válidos.
+
+
+- `token_max_ttl=4h`: Esto establece un límite máximo para la duración del token, que puede extenderse hasta un máximo
+  de 4 horas. Si el token se genera con un TTL menor (por ejemplo, 1 hora como configuraste), se aplicará ese TTL, pero
+  el token no podrá durar más de 4 horas, aunque su TTL inicial se haya configurado a menos.
