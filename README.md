@@ -31,4 +31,11 @@
    configuraciones y además cada aplicación tiene configuraciones que son propias de él. Entonces, lo que se hizo fue
    crear en `Vault` un `default-context` llamado `shared-config` para alojar las configuraciones compartidas y además se
    uso la configuración `application-name` para especificar el nombre de la aplicación donde se alojará las
-   configuraciones propias de la aplicación. 
+   configuraciones propias de la aplicación.
+
+
+5. En el proyecto `spring-boot-vault-approle` hemos cambiado la manera de autenticarnos a `Vault`. En los otros
+   proyectos usamos el método de autenticación por defecto que es `TOKEN`, pero en este proyecto usamos el
+   método de autenticación `APPROLE`. De esta manera podemos generar un `role-id` y `secret-id` para autenticarnos con
+   `Vault` y no usar el token principal dado que ese token tiene permisos globales en todo `Vault` y eso podría
+   constituir una vulnerabilidad.
