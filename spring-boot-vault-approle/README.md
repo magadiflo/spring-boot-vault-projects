@@ -142,6 +142,41 @@ cómo interactúan con el `role_id` y el `secret_id`.
 > Si queremos tener roles y políticas para otros perfiles simplemente debemos repetir los pasos anteriores teniendo en
 > cuenta el perfil.
 
+## Configura Spring Boot con AppRole
+
+Con las configuraciones anteriormente realizadas del AppRole en Vault, vamos a configurar nuestra aplicación de Spring
+Boot para hacer uso del AppRole.
+
+En el `application.yml` agregamos la siguiente configuración donde hacemos uso del `role-id` y del `secret-id` y por
+supuesto del método de autenticación `APPROLE`.
+
+````yml
+spring:
+  application:
+    name: spring-boot-vault-approle
+  profiles:
+    active: dev
+
+  cloud:
+    vault:
+      host: localhost
+      port: 8200
+      scheme: http
+      authentication: APPROLE
+      app-role:
+        role-id: cd268cb1-d711-359d-ba9e-76de1d6a507a
+        secret-id: 9e2bf4d8-2654-2f32-a7ed-36b4e8cb938e
+      kv:
+        backend: spring-microservices
+        default-context: spring-boot-vault-approle
+
+  config:
+    import: optional:vault://
+
+external-api:
+  uri: https://external-api-for-spring-boot-vault-approle.com/v1/
+````
+
 ## Algunos comandos para interactuar con Vault, políticas y roles
 
 - Listar políticas
