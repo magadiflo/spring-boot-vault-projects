@@ -86,7 +86,6 @@ cómo interactúan con el `role_id` y el `secret_id`.
       a roles o tokens.
     - `read`, permite leer los datos almacenados en la ruta especificada. Esto es necesario para que las aplicaciones u
       usuarios puedan recuperar valores secretos o configuraciones almacenadas en una ruta.
-    -
 
    Ejecuta el siguiente comando para aplicar las políticas.
 
